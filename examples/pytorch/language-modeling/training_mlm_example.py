@@ -2,6 +2,9 @@ import os
 from transformers import BertTokenizer, BertForMaskedLM
 import torch
 
+from transformers import AdamW
+from tqdm import tqdm
+
 wd_in = os.getcwd() + "/data/in/"
 wd_out = os.getcwd() + "/data/out/"
 tokenizer = BertTokenizer.from_pretrained('bert-base-german-cased')
@@ -41,6 +44,30 @@ class GerParCorDS(torch.utils.data.Dataset):
 dataset = GerParCorDS(inputs)
 dataloader = torch.utils.DataLoader(dataset, batch_size=16, shuffle=True)
 
+device = torch.device('cuda')
+model.to(device)
+model.train()
 
+
+optim = AdamW(model.parameters(), lr=1e-5)
+
+epochs = 2
+
+# training
+for epoch in range(epochs):
+    loop = tqdm(dataloader, leave=True)
+    for batch in loop:
+        optim.zero_grad()
+        input_ids = batch['input_ids'].to(device)
+        attention_mask = batch['attention_mask'].to(device)
+        labels = batch['labels'].to(device)
+
+        outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+        loss = outputs.loss
+        loss.backward()
+        optim.step()
+
+        loop.set_description(f'Epoch {epoch}')
+        loop.set_postfix(loss=loss.item())
 
 db = True
