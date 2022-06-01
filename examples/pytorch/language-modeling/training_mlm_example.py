@@ -1,4 +1,5 @@
 import os
+
 from transformers import BertTokenizer, BertForMaskedLM
 import torch
 
@@ -30,6 +31,7 @@ for i in range(mask_arr.shape[0]):
 for i in range(mask_arr.shape[0]):
     inputs.input_ids[i, selection[i]] = 103
 
+
 class GerParCorDS(torch.utils.data.Dataset):
     def __int__(self, encodings):
         self.encodings = encodings
@@ -42,7 +44,7 @@ class GerParCorDS(torch.utils.data.Dataset):
 
 
 dataset = GerParCorDS(inputs)
-dataloader = torch.utils.DataLoader(dataset, batch_size=16, shuffle=True)
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=True)
 
 device = torch.device('cuda')
 model.to(device)
