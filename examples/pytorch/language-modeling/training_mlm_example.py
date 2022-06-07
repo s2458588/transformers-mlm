@@ -1,8 +1,7 @@
 import os
-
-from transformers import BertTokenizer, BertForMaskedLM
 import torch
-
+from torch.utils.data import Dataset
+from transformers import BertTokenizer, BertForMaskedLM
 from transformers import AdamW
 from tqdm import tqdm
 
@@ -18,9 +17,7 @@ inputs = tokenizer(text, return_tensors='pt', max_length=512, truncation=True, p
 inputs['labels'] = inputs.input_ids.detach().clone()
 
 rand = torch.rand(inputs.input_ids.shape)
-mask_arr = (rand < 0.15) * (inputs.input_ids != 101) * (inputs.input_ids != 102)
-selection = torch.flatten(mask_arr[0].nonzero()).tolist()
-inputs.input_ids[0, selection] = 103
+mask_arr = (rand < 0.15) * (inputs.input_ids != 101) * (inputs.input_ids != 102) * (inputs.input_ids != 0)
 
 selection = []
 for i in range(mask_arr.shape[0]):
@@ -32,8 +29,14 @@ for i in range(mask_arr.shape[0]):
     inputs.input_ids[i, selection[i]] = 103
 
 
-class GerParCorDS(torch.utils.data.Dataset):
-    def __int__(self, encodings):
+class GerParCorDS(Dataset):
+    def __new__(cls, encodings, *args, **kwargs):
+        print("Creating class instance")
+        instance = super(GerParCorDS, cls).__new__(cls, *args, **kwargs)
+        return instance
+
+    def __init__(self, encodings, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.encodings = encodings
 
     def __getitem__(self, idx):
@@ -50,8 +53,7 @@ device = torch.device('cuda')
 model.to(device)
 model.train()
 
-
-optim = AdamW(model.parameters(), lr=1e-5)
+optim = torch.optim.AdamW(model.parameters(), lr=1e-5)
 
 epochs = 2
 
